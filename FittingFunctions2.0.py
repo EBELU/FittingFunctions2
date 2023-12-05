@@ -24,12 +24,19 @@ class gaussian:
         self.mu = mu
         self.sigma = sigma
         self.covar_matrix = covar_matrix
+        
+    def value(self, x):
+        return GaussFunc(x, self.A, self.mu, self.sigma)
+    def area(self):
+        return self.A*np.abs(self.sigma)*np.sqrt(2*np.pi)
     
+    # Allows for sorting of gaussian objects
     def __eq__(self, obj):
         return self.mu == obj.mu
     def __lt__(self, obj):
         return self.mu < obj.mu
-    def __str__(self): #Print reprs
+    # Allows printing of gaussian objects
+    def __str__(self):
         est_par = "Estimated paramters: A = {}, mu = {}, sigma = {}".format(
             round(self.A, 4), round(self.mu, 4), round(self.sigma, 4))
         uncert = "Uncertanties: \u03C3(A) = {}, \u03C3(mu) = {}, \u03C3(sigma) = {}".format(
