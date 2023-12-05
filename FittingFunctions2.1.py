@@ -19,15 +19,31 @@ y = GaussFunc(x, 5, 20, 3)
 
 class gaussian:
     """Class to hold data for the gaussian"""
-    def __init__(self, x, y, region_start, region_stop, #Setting region with one peak of interest
+    def __init__(self, X, Y, region_start, region_stop, #Setting region with one peak of interest
                      mu_guess = None, A_guess = None, sigma_guess = None, #Manual set guesses
                      scatter_corr = True, scatter_corr_points = 3, # Scatter correction setting
-                     scatter_corr_left = None, scatter_corr_right = None):
+                     corr_left = None, corr_right = None):
         #Slice up region of interest
-        region = (region_start < x) & (x < region_stop)
-        x_region = x[region]
-        y_region = y[region]
-        
+        region = (region_start < X) & (X < region_stop)
+        x_region = X[region]
+        y_region = Y[region]
+        const_y_region = y_region
+                
+        if scatter_corr:
+            if not corr_left:
+                corr_left = region_start
+            if not corr_right:
+                corr_right = region_stop
+            
+            left_xselection = sum(X[X <= corr_left][-scatter_corr_points:])/scatter_corr_points
+            right_xselection = sum(X[X >= corr_right][:scatter_corr_points])/scatter_corr_points
+            left_yselection = sum(Y[X <= corr_left][-scatter_corr_points:])/scatter_corr_points
+            right_yselection = sum(Y[X >= corr_right][:scatter_corr_points])/scatter_corr_points
+            
+            k, m = np.polyfit([left_xselection, right_xselection], [left_yselection, right_yselection], 1)
+            corr_f = lambda x : k * x + m
+            y_region = y_region - corr_f(x_region)
+            self._corr_f = corr_f
         #Assign guesses
         if A_guess:
             A_g = A_guess
@@ -51,8 +67,17 @@ class gaussian:
             
         guesses = [A_g, mu_g, sigma_g]
         
+        plt.figure()
+        width = peak_widths(y_region, [y_region.argmax()], 0.95)[0][0]
+        test_1 = x_region > mu_g + width
+        test_2 = x_region < mu_g - width
+        plt.plot(x_region, ((y_region)))
+        plt.plot(x_region[y_region.argmax()], y_region[y_region.argmax()], ".")
+        plt.plot(x_region[test_1], y_region[test_1])
+        plt.plot(x_region[test_2], y_region[test_2])
+        
         """MÖG FRÅN DEBUGGING"""
-        #plt.plot(x_region, y_region)
+        # plt.plot(x_region, y_region)
         
         # print(y_region.argmax())
         # print(sigma_g)
@@ -79,6 +104,9 @@ class gaussian:
                 self.mu = estimates[1]
                 self.sigma = abs(estimates[2])
                 self.covar_matrix = covar_matrix
+                self._region = [x_region, const_y_region]
+                self._region_limits = [region_start, region_stop]
+
             except (RuntimeError, OptimizeWarning, TypeError):
                 print("Gaussian fit failed! Try specifying another mu_guess.")
 
@@ -87,6 +115,18 @@ class gaussian:
         return GaussFunc(x, self.A, self.mu, self.sigma)
     def area(self):
         return self.A*np.abs(self.sigma)*np.sqrt(2*np.pi)
+    
+    def plot(self):
+        plt.figure(figsize = [9,6])
+        plt.plot(self._region[0], self._region[1], label = "Data", color = "deepskyblue")
+        plt.plot(self._region[0], self.value(self._region[0]), label = "Fitted Gaussian", color = "forestgreen")
+        try:
+            plt.plot(self._region[0], self._corr_f(self._region[0]), label = "Scatter correction", color = "crimson")
+        except(AttributeError):
+            pass
+        plt.legend(fontsize="large")
+        plt.xticks(fontsize="large")
+        plt.yticks(fontsize="large")
 
     def __str__(self):
         est_par = "Estimated paramters: A = {}, mu = {}, sigma = {}".format(
