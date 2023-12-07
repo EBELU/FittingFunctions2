@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Sun Dec  3 03:11:19 2023
+Created on Sun Dec  3 12:11:19 2023
 
-@author: Erik Ewald
+@author: eewa
 """
 
 import numpy as np
@@ -38,16 +38,18 @@ def width_custom(y_region, x_region, threshold = 200):
         right_point = x_region[right_region][(right_grad >= -threshold)][0]
         return(left_point, right_point)
         
-        
-x = np.linspace(0, 100, 500)
-y = GaussFunc(x, 5, 20, 3)
-
+"""Class to hold data for the gaussian"""
 class gaussian:
-    """Class to hold data for the gaussian"""
+    """Constructor performs fit"""
     def __init__(self, X, Y, region_start, region_stop, #Setting region with one peak of interest
+                     corr_left = None, corr_right = None, corr_thresh = 0.05, #Scatter correction region
                      mu_guess = None, A_guess = None, sigma_guess = None, #Manual set guesses
-                     scatter_corr = True, scatter_corr_points = 3, # Scatter correction setting
-                     corr_left = None, corr_right = None, corr_thresh = 0.05):
+                     scatter_corr = "auto", scatter_corr_points = 3):# Scatter correction setting
+    
+        if corr_left < region_start or corr_right > region_stop: # Warning for incorrectly placed correction limits
+            print('\033[0;1;31m' + "Warning!" +'\033[0m')
+            print("Scatter point outside region!")
+            
         #Slice up region of interest
         region = (region_start < X) & (X < region_stop)
         x_region = X[region]
@@ -56,7 +58,7 @@ class gaussian:
         
         # Make  correction for background scatter
         if scatter_corr:
-            if not corr_left and not corr_left:
+            if scatter_corr == "auto" and not corr_left and not corr_right:
                 try:
                     #Try to get boundries for correction, the funciton can be finiky
                     corr_left, corr_right = width_custom(y_region, x_region, corr_thresh)
@@ -65,11 +67,11 @@ class gaussian:
                     print('\033[0;1;31m' + "Warning!" +'\033[0m')
                     print(f"Automatic scatter correction failed on the region [{region_start}, {region_stop}]")
                     print("Try selecting another region or changing the threshold")
-
-            if not corr_left:
-                    corr_left = region_start
-            if not corr_right:
-                    corr_right = region_stop
+            else:
+                if not corr_left:
+                        corr_left = region_start
+                if not corr_right:
+                        corr_right = region_stop
                     
             # The scatter_corr_points nr of data points outside the boundries for
             # scatter correction and average them in both x- and y-axis.
@@ -80,19 +82,25 @@ class gaussian:
             
             # Make a linear fit to
             k, m = np.polyfit([left_xselection, right_xselection], [left_yselection, right_yselection], 1)
-            print([left_xselection, right_xselection])
-            print([left_yselection, right_yselection])
-            print(k, m)
+            
+            # print([left_xselection, right_xselection])
+            # print([left_yselection, right_yselection])
+            # print(k, m)
+            
             # Make a linear function from the parameters
             corr_f = lambda x : k * x + m
             # Subtract the background region from the y-region
-            y_region = y_region - corr_f(x_region)
+            y_region = const_y_region.copy() - corr_f(x_region)
+            
+            lin_region = ((x_region >= left_xselection) & (x_region <= right_xselection))
             # Save correction data for plotting purposes
             self._corr_f = corr_f
             self._corr_points = [corr_left, corr_right]
+            self._areas = [sum(const_y_region[lin_region]),sum(y_region[lin_region]), sum(self._corr_f(x_region[lin_region]))]
         if scatter_corr == False:
             self._corr_f = lambda x : x * 0
             self._corr_points = [None, None]
+            self._areas = [sum(y_region),sum(y_region), sum(self._corr_f(x_region))]
         #Assign guesses
         if A_guess:
             A_g = A_guess
@@ -138,15 +146,14 @@ class gaussian:
         # print(sigma_g)
         # print(y_region[8])
         # print(guesses)
-        #Fitting the parameters
+        
+        # Handling the warning from SciPy as errors
         import warnings
         from scipy.optimize import OptimizeWarning
         with warnings.catch_warnings():
             warnings.simplefilter("error", OptimizeWarning)
             ## perform the gaussian fit to the data:
             try:
-                ## use the scipy curve_fit routine (uses non-linear least squares to perform the fit)
-                ## see http://docs.scipy.org/doc/scipy-0.16.1/reference/generated/scipy.optimize.curve_fit.html
                 estimates, covar_matrix = curve_fit(GaussFunc,
                                         x_region,
                                         y_region,
@@ -160,27 +167,32 @@ class gaussian:
                 self.covar_matrix = covar_matrix
                 self._region = [x_region, const_y_region]
                 self._region_limits = [region_start, region_stop]
-                self._areas = [sum(const_y_region),sum(y_region), sum(self._corr_f(x_region))]
             except (RuntimeError, OptimizeWarning, TypeError):
-                raise RuntimeError("Gaussian fit failed! Try specifying another region.")
+                raise RuntimeError(f"Gaussian fit failed at [{region_start}, {region_stop}]! Try specifying another region.")
 
                 
-        
+    "Getter functions"
     def value(self, x):
         return GaussFunc(x, self.A, self.mu, self.sigma)
     def area(self):
         return self.A*np.abs(self.sigma)*np.sqrt(2*np.pi)
+    def FWHM(self):
+        return 2.35 * np.array([self.sigma, np.sqrt(self.covar_matrix[2][2])])
+    def addinfo(self):
+        return [self.A + self._corr_f(self.mu), self._areas[0], self._areas[1],self._areas[2]]
     
+    "Plotting"
     def plot(self, xlabel = None, ylabel = None):
         plt.figure(figsize = [9,6])
         plt.plot(self._region[0], self._region[1], label = "Data", color = "deepskyblue")
         plt.plot(self._region[0], self._corr_f(self._region[0]) + self.value(self._region[0]), label = "Fitted Gaussian", color = "forestgreen")
-        try:
-            plt.plot(self._region[0], self._corr_f(self._region[0]), label = "Scatter correction", color = "crimson")
-        except(AttributeError):
-            pass
-        plt.vlines(self._corr_points[0], 0, self.A * .8, color = "crimson")
-        plt.vlines(self._corr_points[1], 0, self.A * .8, color = "crimson")
+        if self._corr_points != [None, None]:
+            try:
+                plt.plot(self._region[0], self._corr_f(self._region[0]), label = "Scatter correction", color = "crimson")
+                plt.vlines(self._corr_points[0], 0, (self._corr_f(self.mu)+self.A) * 1, color = "crimson")
+                plt.vlines(self._corr_points[1], 0, (self._corr_f(self.mu)+self.A) * 1, color = "crimson")
+            except(AttributeError):
+                pass
         plt.xlabel(xlabel,fontsize="large")
         plt.ylabel(ylabel,fontsize="large")
         plt.legend(fontsize="large")
@@ -199,3 +211,9 @@ class gaussian:
             round(self._areas[1], 4), round(self._areas[2], 4))
         covarmat = "Covariance matrix: \n {}".format(self.covar_matrix)
         return est_par + "\n" + uncert + "\n" + add_info + "\n\n" + covarmat + "\n\n"
+
+
+
+
+
+
