@@ -44,11 +44,11 @@ class gaussian:
     def __init__(self, X, Y, region_start, region_stop, #Setting region with one peak of interest
                      corr_left = None, corr_right = None, corr_thresh = 0.05, #Scatter correction region
                      mu_guess = None, A_guess = None, sigma_guess = None, #Manual set guesses
-                     scatter_corr = "auto", scatter_corr_points = 3):# Scatter correction setting
-    
-        if corr_left < region_start or corr_right > region_stop: # Warning for incorrectly placed correction limits
-            print('\033[0;1;31m' + "Warning!" +'\033[0m')
-            print("Scatter point outside region!")
+                     scatter_corr = "auto", scatter_corr_points = 5):# Scatter correction setting
+        if corr_left != None and corr_right != None:
+            if corr_left < region_start or corr_right > region_stop: # Warning for incorrectly placed correction limits
+                print('\033[0;1;31m' + "Warning!" +'\033[0m')
+                print("Scatter point outside region!")
             
         #Slice up region of interest
         region = (region_start < X) & (X < region_stop)
@@ -63,10 +63,10 @@ class gaussian:
                     #Try to get boundries for correction, the funciton can be finiky
                     corr_left, corr_right = width_custom(y_region, x_region, corr_thresh)
                 except:
-                    corr_left, corr_right = (0,0)
+                    corr_left, corr_right = (region_start,region_stop)
                     print('\033[0;1;31m' + "Warning!" +'\033[0m')
                     print(f"Automatic scatter correction failed on the region [{region_start}, {region_stop}]")
-                    print("Try selecting another region or changing the threshold")
+                    print("Try selecting another region or changing the threshold\n")
             else:
                 if not corr_left:
                         corr_left = region_start
@@ -100,7 +100,7 @@ class gaussian:
         if scatter_corr == False:
             self._corr_f = lambda x : x * 0
             self._corr_points = [None, None]
-            self._areas = [sum(y_region),sum(y_region), sum(self._corr_f(x_region))]
+            self._areas = [sum(y_region),sum(y_region), 0.]
         #Assign guesses
         if A_guess:
             A_g = A_guess
@@ -113,7 +113,7 @@ class gaussian:
         else:
             # The guess for mu is automatically set to the value on the x-axis corresponsing
             # to the largest y-value in the region.
-            mu_g = x_region[y_region == max(y_region)][0]
+            mu_g = x_region[y_region.argmax()]
 
         if sigma_guess:
             sigma_g = sigma_guess
@@ -183,14 +183,14 @@ class gaussian:
     
     "Plotting"
     def plot(self, xlabel = None, ylabel = None):
-        plt.figure(figsize = [9,6])
+        plt.figure("peak",figsize = [9,6])
         plt.plot(self._region[0], self._region[1], label = "Data", color = "deepskyblue")
-        plt.plot(self._region[0], self._corr_f(self._region[0]) + self.value(self._region[0]), label = "Fitted Gaussian", color = "forestgreen")
+        plt.plot(self._region[0], self._corr_f(self._region[0]) + self.value(self._region[0]), label = "Fitted Gaussian", color = "indigo")
         if self._corr_points != [None, None]:
             try:
-                plt.plot(self._region[0], self._corr_f(self._region[0]), label = "Scatter correction", color = "crimson")
-                plt.vlines(self._corr_points[0], 0, (self._corr_f(self.mu)+self.A) * 1, color = "crimson")
-                plt.vlines(self._corr_points[1], 0, (self._corr_f(self.mu)+self.A) * 1, color = "crimson")
+                plt.plot(self._region[0], self._corr_f(self._region[0]), ":", label = "Scatter correction", color = "red")
+                plt.vlines(self._corr_points[0], 0, (self._corr_f(self.mu)+self.A) * 1, color = "red")
+                plt.vlines(self._corr_points[1], 0, (self._corr_f(self.mu)+self.A) * 1, color = "red")
             except(AttributeError):
                 pass
         plt.xlabel(xlabel,fontsize="large")
@@ -198,6 +198,7 @@ class gaussian:
         plt.legend(fontsize="large")
         plt.xticks(fontsize="large")
         plt.yticks(fontsize="large")
+        plt.show()
 
     def __str__(self):
         est_par = "Estimated paramters: A = {}, mu = {}, sigma = {}".format(
@@ -207,13 +208,58 @@ class gaussian:
             round(np.sqrt(self.covar_matrix[1][1]), 4), 
             round(np.sqrt(self.covar_matrix[2][2]), 4))
         add_info = "Addtional info: Max height = {}, G = {}, N = {}, B = {}".format(
-            round(self.A + self._corr_f(self.mu), 4), round(self._areas[0], 4),
-            round(self._areas[1], 4), round(self._areas[2], 4))
+            round(self.A + self._corr_f(self.mu), 4), round(self._areas[0]),
+            round(self._areas[1]), round(self._areas[2]))
         covarmat = "Covariance matrix: \n {}".format(self.covar_matrix)
         return est_par + "\n" + uncert + "\n" + add_info + "\n\n" + covarmat + "\n\n"
 
 
-
+def calibrate(Y, peak_regions, energies, plot = False, gauss = True):
+    if len(peak_regions) != len(energies):
+        raise IndexError("Nr of peaks must match number of energies provided!")
+    X = np.array(range(len(Y)))
+    peaks = []
+    gauss_peaks = []
+    for p_region in peak_regions:
+        if gauss:
+            gauss_peak=gaussian(X,Y, region_start=p_region[0], region_stop=p_region[1], scatter_corr=True)
+            gauss_peaks.append(gauss_peak)
+            peaks.append(gauss_peak.mu)
+        else:
+            region = (p_region[0] < X) & (X < p_region[1])
+            x_region = X[region]
+            y_region = Y[region]
+            peaks.append(x_region[y_region.argmax()])
+    
+    k,m = np.polyfit(peaks, energies, 1)
+    lin_f = lambda x : k * x + m
+    calib_x = lin_f(X)
+    peaks = np.array(peaks)
+    
+    if plot:
+        plt.figure(figsize=[9,6])
+        plt.plot(calib_x, Y, color = "lightskyblue", label = "Data")
+        for i, (start, stop) in enumerate(peak_regions):
+            y_val = Y[round(peaks[i])]
+            plt.vlines(calib_x[start], 0, y_val, color = "red", label="Region Limits")
+            plt.vlines(calib_x[stop], 0, y_val, color = "red")
+            if gauss:
+                region = (start < X) & (X < stop)
+                gauss_x =  calib_x[region]
+                gauss_y = gauss_peaks[i].value(X[region]) + gauss_peaks[i]._corr_f(X[region]) 
+                plt.plot(gauss_x, gauss_peaks[i]._corr_f(X[region]), color = "red", label = "Scatter correction", linestyle=":")
+                plt.plot(gauss_x, gauss_y, color = "indigo", label = "Fitted gaussian")
+                plt.scatter(lin_f(gauss_peaks[i].mu), gauss_peaks[i].addinfo()[0], color = "teal", label = "Calibration peak")
+            else:
+                plt.scatter(lin_f(peaks[i]), y_val, color = "teal", label = "Calibration peak")
+        plt.legend(fontsize="large")
+        plt.xticks(fontsize="large")
+        plt.yticks(fontsize="large")
+        handles, labels = plt.gca().get_legend_handles_labels()
+        by_label = dict(zip(labels, handles))
+        plt.legend(by_label.values(), by_label.keys(), fontsize="large")
+        plt.show()
+    return (calib_x, (k,m))
 
 
 
