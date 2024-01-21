@@ -8,6 +8,9 @@ from scipy.optimize import curve_fit, OptimizeWarning
 def GaussFunc(x, A, mu, sigma):
     return A*np.exp(-(x-mu)**2/(2.*sigma**2))
 
+def LorentzianFunc(x, A, mu, FWHM):
+    return FWHM/2 * A/((x-mu)**2 + (mu/2)**2)
+
 def LineFunc(x, k, m):
     return k*x+m
 
