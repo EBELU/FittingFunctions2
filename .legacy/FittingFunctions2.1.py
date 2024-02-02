@@ -221,3 +221,4 @@ def calibrate(Y, peak_regions, energies, plot = False, gauss = True):
         plt.legend(by_label.values(), by_label.keys(), fontsize="large")
         plt.show()
     return (calib_x, (k,m))
+
