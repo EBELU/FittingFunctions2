@@ -10,11 +10,19 @@ def is_iter(obj):
     except(TypeError):
         return False
 
-def slice_spect(spect, low = None, high = None):
+def slice_spect(spect, *args, low = None, high = None):
     spect = np.array(spect)
     if (low is not None) and (high is not None):
-        return spect[(spect >= low) & (spect <= high)]
+        region = (spect >= low) & (spect <= high)
     elif (low is not None):
-        return spect[(spect >= low)]
+        region = (spect >= low)
     elif (high is not None):
-        return spect[(spect <= high)]
+        region = (spect <= high)
+    
+    if not args:
+        return spect[region]
+    else:
+        spectra = [spect[region]]
+        for spectrum in args:
+            spectra.append(spectrum[region])
+        return spectra
