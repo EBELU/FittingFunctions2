@@ -3,8 +3,19 @@ import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 from scipy.signal import peak_widths
 
+
 def GaussFunc(x, A, mu, sigma):
+    # This can be changed to _LorentzianFunc if you want a more theoretically accurate fit
+    _GaussFunc(x, A, mu, sigma)
+
+# This is the function normally used
+def _GaussFunc(x, A, mu, sigma):
     return A*np.exp(-(x-mu)**2/(2*sigma**2))
+
+#The real distribution of a spectral line
+def _LorentzianFunc(x, A, mu, FWHM):
+    return FWHM/2 * A/((x-mu)**2 + (mu/2)**2)
+
 
 def width_custom(y_region, x_region, threshold = 200):
         # Find the centre point value and index
