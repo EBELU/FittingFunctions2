@@ -40,21 +40,15 @@ import FittingFunctions2 as ff
 
 ## ___Gaussian Functions___ 
 For the following scripts the definition of a Gaussian function is as follows:
-$$
-G(x) = A\cdot exp\left(-\frac{(x-mu)^2}{2\cdot (sigma)^2}\right)
-$$
+$$G(x) = A\cdot exp\left(-\frac{(x-mu)^2}{2\cdot (sigma)^2}\right)$$
 
 
 ![Gaussian.](.RMim/gaussian.png)
 
 Other useful analytical formulae are:
 
-$$
-\text{Area: } area = A \cdot sigma \cdot \sqrt{2 \cdot \pi}
-$$
-$$
-\text{FWHM: } FWHM = sigma \cdot 2\sqrt{2\pi} \approx sigma \cdot 2.35
-$$
+$$\text{Area: } area = A \cdot sigma \cdot \sqrt{2 \cdot \pi}$$
+$$\text{FWHM: } FWHM = sigma \cdot 2\sqrt{2\pi} \approx sigma \cdot 2.35$$
 
 ### *```gaussian```* class
 The gaussian class holds the return values from all functions that fit a Gaussian function and is not intended to be used independently. **Printing** a gaussian object gives rounded values. Raw values are accessed as public members or methods. Raw values for uncertainties have to be derived from the covariance matrix.
@@ -187,7 +181,7 @@ calibrate(Y, peak_regions, energies, plot=False, gauss=True)
 ## ***Miscellaneous***
 Miscellaneous functions included in the package that might be of some use. 
 ### ```slice_spect```
-Slices arrays containing strictly increasing values, like a calibrated x-axis, based on the values in the array.
+Slices an array containing strictly increasing values, like a calibrated x-axis, based on the values in the array. More arrays of the same shape as the first array can be given and will also be sliced into the same shape as the first array.
 ```py
 slice_spect(spect, *args, low=None, high=None)
 ```
