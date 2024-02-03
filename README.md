@@ -47,7 +47,14 @@ $$
 
 ![Gaussian.](.RMim/gaussian.png)
 
+Other useful analytical formulae are:
 
+$$
+\text{Area: } area = A \cdot sigma \cdot \sqrt{2 \cdot \pi}
+$$
+$$
+\text{FWHM: } FWHM = sigma \cdot 2\sqrt{2\pi} \approx sigma \cdot 2.35
+$$
 
 ### *```gaussian```* class
 The gaussian class holds the return values from all functions that fit a Gaussian function and is not intended to be used independently. **Printing** a gaussian object gives rounded values. Raw values are accessed as public members or methods. Raw values for uncertainties have to be derived from the covariance matrix.
