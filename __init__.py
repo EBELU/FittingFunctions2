@@ -3,7 +3,7 @@ An improved version of fittingfunctions.
 
 import FittingFunctions2 as ff
 
-Contains functions for fitting Gaussian and Lorentzian distributions in spectra.
+Contains functions for fitting Gaussian distributions in spectra.
 Additional functions for calibration and slicing spectra are also included.
 
 See accompanying README files for documentation on provided functions.

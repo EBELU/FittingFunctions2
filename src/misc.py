@@ -18,11 +18,15 @@ def slice_spect(spect, *args, low = None, high = None):
         region = (spect >= low)
     elif (high is not None):
         region = (spect <= high)
+    else:
+        raise RuntimeError("No limits given")
+        return None
     
     if not args:
         return spect[region]
     else:
         spectra = [spect[region]]
         for spectrum in args:
+            spectrum = np.array(spectrum)
             spectra.append(spectrum[region])
         return spectra

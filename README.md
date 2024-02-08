@@ -32,7 +32,7 @@ Made in python version 3.11.5
 
 ## Importing
 
-To import the module, this python file is placed in the working directory for the project and imported into the main file as
+To import the module, folder FittingFunctions2 is placed in the working directory for the project and imported into the main file:
 
 ```py 
 import FittingFunctions2 as ff
@@ -48,7 +48,7 @@ $$G(x) = A\cdot exp\left(-\frac{(x-mu)^2}{2\cdot (sigma)^2}\right)$$
 Other useful analytical formulae are:
 
 $$\text{Area: } area = A \cdot sigma \cdot \sqrt{2 \cdot \pi}$$
-$$\text{FWHM: } FWHM = sigma \cdot 2\sqrt{2\pi} \approx sigma \cdot 2.35$$
+$$\text{Full-Width-Half-Maximum:  FWHM } = sigma \cdot 2\sqrt{2\pi}$$
 
 ### *```gaussian```* class
 The gaussian class holds the return values from all functions that fit a Gaussian function and is not intended to be used independently. **Printing** a gaussian object gives rounded values. Raw values are accessed as public members or methods. Raw values for uncertainties have to be derived from the covariance matrix.
@@ -81,7 +81,7 @@ Covariance matrix:
 | *gaussian*.**mu** : *float*   | The central value of the fitted gaussian curve.    |
 | *gaussian*.**sigma** : *float*    | The fitted value of sigma.    |
 | *gussian*.**cov_matrix** *3x3-array* | The covariance matrix from the fit corresponding to *A, mu* and *sigma*.
-| *gussian*.**G** : *float*   | The gross area of the region enclosed by the scatter correction boundaries., i.e. the sum of all y-values in the selected region.
+| *gussian*.**G** : *float*   | The gross area of the region enclosed by the scatter correction boundaries, i.e. the sum of all y-values in the selected region.
 | *gussian*.**B** : *float*  | The scatter background calculated as the sum of the linear scatter correction function across the region enclosed by the scatter correction boundaries.
 | *gussian*.**N** : *float*  | The net area of the peak, i.e.  *gussian*.**G** - *gussian*.**B**.
 
@@ -109,8 +109,8 @@ Attempts to fit a gaussian function to a data set using the *curve_fit* routine 
 
 | Parameter   | Description |
 | -------- | ------- |
-| X : *array_like*  | An iterator corresponding to the x-axis of the data set.|
-| Y : *array_like* | An iterator corresponding to the y-axis of the data set.|
+| X : *array_like*  | An array corresponding to the x-axis of the data set.|
+| Y : *array_like* | An array corresponding to the y-axis of the data set.|
 |region_start : *float*  | The lower bound of the region on which the gaussian will be fitted.|
 |region_stop : *float*  | The upper bound of the region on which the gaussian will be fitted.|
 |corr_left : *float, optional*  | Left point at which scatter correction will be made. This only affects the scatter correction, the fit will always be made over the entire region. |
@@ -139,16 +139,16 @@ fit_double_gaussian(X, Y, region_start, region_stop, split_point,
 ```
 | Parameter   | Description |
 | -------- | ------- |
-| X : *array_like*  | An iterator corresponding to the x-axis of the data set.|
-| Y : *array_like* | An iterator corresponding to the y-axis of the data set.|
-|split_point : *float* | A point in between the two peaks that split the region for the purpose of automatically assigning guesses.
+| X : *array_like*  | An array corresponding to the x-axis of the data set.|
+| Y : *array_like* | An array corresponding to the y-axis of the data set.|
+|split_point : *float* | A point in between the two peaks that split the region for the purpose of automatically assigning guesses. |
 |region_start : *float*  | The lower bound of the region on which the gaussian will be fitted.|
 |region_stop : *float*  | The upper bound of the region on which the gaussian will be fitted.|
 |corr_left : *float, optional*  | Left point at which scatter correction will be made. This only affects the scatter correction, the fit will always be made over the entire region. |
 |corr_right : *float, optional*  | Right point at which scatter correction will be made. This only affects the scatter correction, the fit will always be made over the entire region. |
-| mu1_guess / mu2_guess : *float, optional*  | Manual guess for *mu*. The first peak is lower on the x-axis than the second peak, *mu1* < *mu2*.
-| A1_guess / A2_guess : *float, optional*  | Manual guess for *A*. The first peak is lower on the x-axis than the second peak.
-| sigma1_guess / sigma2_guess : *float, optional*  | Manual guess for *sigma*. The first peak is lower on the x-axis than the second peak.
+| mu1_guess / mu2_guess : *float, optional*  | Manual guess for *mu*. The first peak is lower on the x-axis than the second peak, *mu1* < *mu2*. |
+| A1_guess / A2_guess : *float, optional*  | Manual guess for *A*. The first peak is lower on the x-axis than the second peak. |
+| sigma1_guess / sigma2_guess : *float, optional*  | Manual guess for *sigma*. The first peak is lower on the x-axis than the second peak. |
 |scatter_corr : *bool, optional*  | Sets if a scatter correction is made.
 | scatter_corr_points : *int, optional* | The number of points over which the bounds of the scatter correction is averaged. The default 3 means the point is chosen as the average of the first 3 inside the gaussian region.| 
 
@@ -156,7 +156,7 @@ fit_double_gaussian(X, Y, region_start, region_stop, split_point,
 
 | Returns   | Description |
 | -------- | ------- |
-| Peaks : *tuple* | A tuple containing two *gaussian* objects corresponding to the two peaks, in order of ascending *mu* values. See the section on the *gaussian* class. 
+| (peak\_1, peak\_2) : *tuple* | A tuple containing two *gaussian* objects corresponding to the two peaks, in order of ascending *mu* values. See the section on the *gaussian* class. 
 ### Spectrum Calibration
 Calibrates a spectrum by marking peaks and providing energies corresponding to the marked peaks. 
 
@@ -189,8 +189,8 @@ slice_spect(spect, *args, low=None, high=None)
 | -------- | ------- |
 |spect : *array_like* | An array containing a calibrated x-axis. |
 | *args : *array_like, optional* | Additional arrays of the same shape as *spect* that will be sliced into the same shape as the returned version of *spect*|
-| low : *float, optional* | The low cut off point for the spectrum. |
-| high : *float, optional* | The high cut off point for the spectrum. |
+| low : *float, optional* | The low cut off point for the spectrum. Both *low* and *high* can not be omitted. |
+| high : *float, optional* | The high cut off point for the spectrum. Both *low* and *high* can not be omitted. |
 
 | Returns | Description |
 | -------- | ------- |
