@@ -11,3 +11,4 @@ See accompanying README files for documentation on provided functions.
 
 from .src.gaussian_fitting import fit_gaussian, fit_double_gaussian, calibrate
 from .src.misc import is_iter, slice_spect
+from .src.UI import UI_wrapper as UI
