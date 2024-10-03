@@ -99,7 +99,7 @@ class gaussian:
 def fit_gaussian(X, Y, region_start, region_stop,  # Setting region with one peak of interest
                  corr_left=None, corr_right=None,  # Scatter correction region
                  mu_guess=None, A_guess=None, sigma_guess=None,  # Manual set guesses
-                 scatter_corr="auto", scatter_corr_points=3, corr_thresh=0.05):  # Scatter correction setting
+                 scatter_corr="auto", scatter_corr_points=3, corr_thresh=0.05, warnings = True):  # Scatter correction setting
     if corr_left != None and corr_right != None:
         # Warning for incorrectly placed correction limits
         if corr_left < region_start or corr_right > region_stop:
@@ -126,10 +126,11 @@ def fit_gaussian(X, Y, region_start, region_stop,  # Setting region with one pea
                     corr_right = corr_bounds[1]
             except:
                 corr_left, corr_right = (region_start, region_stop)
-                print('\033[0;1;31m' + "Warning!" + '\033[0m')
-                print(
-                    f"Automatic scatter correction failed on the region [{region_start}, {region_stop}]")
-                print("Try selecting another region or changing the threshold\n")
+                if warnings:
+                    print('\033[0;1;31m' + "Warning!" + '\033[0m')
+                    print(
+                        f"Automatic scatter correction failed on the region [{region_start}, {region_stop}]")
+                    print("Try selecting another region or changing the threshold\n")
         else:
             if not corr_left:
                 corr_left = region_start

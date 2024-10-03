@@ -55,6 +55,8 @@ class ff2_UI:
         self.buttons["clear"].on_clicked(self.clear)
         self.buttons["print_peaks"].on_clicked(self.print_peaks)
         
+        self.log = []
+        self.logger("UI initiated")
         if not calibrated:
             self.extra_axes.update({"b_calib" : self.fig.add_axes([0.5, 0.80, 0.05, 0.05]),
                                        "tb_calib" : self.fig.add_axes([0.60, 0.80, 0.20, 0.05])})
@@ -64,9 +66,9 @@ class ff2_UI:
                         
             self.buttons.update({"calib" : Button(self.extra_axes["b_calib"], "Calibrate")})
             self.buttons["calib"].on_clicked(self.calibrate)
-        
-        self.log = []
-        self.logger("UI initiated")
+        else:
+            self.logger("Calibration detected")
+
 
     def logger(self, text, error = False):
         if error:
@@ -93,10 +95,10 @@ class ff2_UI:
 
     def print_peaks(self, event):
         peak_strs = []
-        for peak in self.peaks:
+        for peak in sorted(self.peaks, key = lambda x:x.mu):
             peak_strs.append(f"ff.fit_gaussian(x_data, y_data, region_start={round(peak._region_limits[0])}," + 
-                             f"region_stop={round(peak._region_limits[1])}, corr_left={round(peak._corr_points[1])}, corr_right={round(peak._corr_points[0])}), \n")
-        print(f'\u001b[42m peaks = [{"".join(peak_strs)}] \u001b[0m')
+                             f"region_stop={round(peak._region_limits[1])}, corr_left={round(peak._corr_points[1])}, corr_right={round(peak._corr_points[0])}, warnings = False), \n")
+        print(f'\u001b[42mpeaks = [{"".join(peak_strs)}] \u001b[0m')
 
     def set_peak_button(self):
         i = len(self.peaks) - 1
